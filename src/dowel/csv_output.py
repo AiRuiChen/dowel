@@ -1,8 +1,6 @@
 """A `dowel.logger.LogOutput` for CSV files."""
 import csv
 import warnings
-import os
-import tempfile
 
 from dowel import TabularInput
 from dowel.simple_outputs import FileOutput

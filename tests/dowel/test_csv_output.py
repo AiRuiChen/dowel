@@ -102,7 +102,6 @@ class TestCsvOutput:
         ]  # yapf: disable
         self.assert_csv_matches(correct)
 
-
     def test_empty_record(self):
         self.csv_output.record(self.tabular)
         assert not self.csv_output._writer
