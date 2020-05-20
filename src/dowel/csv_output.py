@@ -39,7 +39,7 @@ class CsvOutput(FileOutput):
                 self._writer = csv.DictWriter(
                     self._log_file,
                     fieldnames=self._fieldnames,
-                    extrasaction='ignore')
+                    extrasaction='raise')
                 self._writer.writeheader()
 
             # add new keys to _fieldnames set
@@ -49,18 +49,7 @@ class CsvOutput(FileOutput):
 
             # if new keys are added, rewrite the csv file
             if len(self._fieldnames) > old_header_size:
-                self._writer = csv.DictWriter(
-                    self._log_file,
-                    fieldnames=sorted(list(self._fieldnames)),
-                    extrasaction='ignore')
-
-                self._log_file.seek(0)
-                self._writer.writeheader()
-
-                with open(self._file_name, 'r') as old_file:
-                    reader = csv.DictReader(old_file)
-                    for row in reader:
-                        self._writer.writerow(row)
+                self.update_header()
 
             self._writer.writerow(to_csv)
 
@@ -68,6 +57,21 @@ class CsvOutput(FileOutput):
                 data.mark(k)
         else:
             raise ValueError('Unacceptable type.')
+
+    # update self._writer and self._log_file with new self._fieldnames
+    def update_header(self):
+        self._writer = csv.DictWriter(
+            self._log_file,
+            fieldnames=sorted(list(self._fieldnames)),
+            extrasaction='raise')
+
+        self._log_file.seek(0)
+        self._writer.writeheader()
+
+        with open(self._file_name, 'r') as old_file:
+            reader = csv.DictReader(old_file)
+            for row in reader:
+                self._writer.writerow(row)
 
     def _warn(self, msg):
         """Warns the user using warnings.warn.
