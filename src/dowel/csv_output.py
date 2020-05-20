@@ -1,6 +1,8 @@
 """A `dowel.logger.LogOutput` for CSV files."""
 import csv
 import warnings
+import os
+import tempfile
 
 from dowel import TabularInput
 from dowel.simple_outputs import FileOutput
@@ -15,6 +17,7 @@ class CsvOutput(FileOutput):
 
     def __init__(self, file_name):
         super().__init__(file_name)
+        self._file_name = file_name
         self._writer = None
         self._fieldnames = None
         self._warned_once = set()
@@ -41,13 +44,25 @@ class CsvOutput(FileOutput):
                     extrasaction='ignore')
                 self._writer.writeheader()
 
-            if to_csv.keys() != self._fieldnames:
-                self._warn('Inconsistent TabularInput keys detected. '
-                           'CsvOutput keys: {}. '
-                           'TabularInput keys: {}. '
-                           'Did you change key sets after your first '
-                           'logger.log(TabularInput)?'.format(
-                               set(self._fieldnames), set(to_csv.keys())))
+            # add new keys to _fieldnames set
+            old_header_size = len(self._fieldnames)
+            for key in to_csv.keys():
+                self._fieldnames.add(key)
+
+            # if new keys are added, rewrite the csv file
+            if len(self._fieldnames) > old_header_size:
+                self._writer = csv.DictWriter(
+                    self._log_file,
+                    fieldnames=sorted(list(self._fieldnames)),
+                    extrasaction='ignore')
+
+                self._log_file.seek(0)
+                self._writer.writeheader()
+
+                with open(self._file_name, 'r') as old_file:
+                    reader = csv.DictReader(old_file)
+                    for row in reader:
+                        self._writer.writerow(row)
 
             self._writer.writerow(to_csv)
 
